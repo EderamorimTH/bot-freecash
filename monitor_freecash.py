@@ -36,10 +36,18 @@ def login_freecash(email, password):
         driver.get("https://freecash.com/auth/login")
         sleep(random.uniform(3, 6))
         
+        # Verifica redirecionamentos
+        if "login" not in driver.current_url:
+            logging.warning(f"Redirecionado para {driver.current_url}, possível CAPTCHA ou erro")
+            return False
+        
         # Aguarda até que o campo de email esteja visível
         logging.info("Aguardando campo de email")
-        email_field = WebDriverWait(driver, 20).until(
-            EC.presence_of_element_located((By.XPATH, "//input[@id='email' or @name='email' or @type='email']"))
+        email_field = WebDriverWait(driver, 30).until(
+            EC.presence_of_element_located((
+                By.XPATH, 
+                "//input[@id='email' or @name='email' or @type='email' or contains(@class, 'email')]"
+            ))
         )
         logging.info("Inserindo email")
         email_field.send_keys(email)
@@ -47,14 +55,17 @@ def login_freecash(email, password):
         # Aguarda o campo de senha
         logging.info("Aguardando campo de senha")
         password_field = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "//input[@id='password' or @name='password' or @type='password']"))
+            EC.presence_of_element_located((
+                By.XPATH, 
+                "//input[@id='password' or @name='password' or @type='password' or contains(@class, 'password')]"
+            ))
         )
         logging.info("Inserindo senha")
         password_field.send_keys(password)
         
         # Verifica se há CAPTCHA
         try:
-            captcha = driver.find_element(By.XPATH, "//div[contains(@class, 'captcha')]")
+            captcha = driver.find_element(By.XPATH, "//div[contains(@class, 'captcha') or contains(@id, 'captcha')]")
             logging.warning("CAPTCHA detectado, login manual necessário")
             return False
         except:
@@ -63,7 +74,10 @@ def login_freecash(email, password):
         # Clica no botão de login
         logging.info("Clicando no botão de login")
         login_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.XPATH, "//button[@type='submit' or contains(text(), 'Login')]"))
+            EC.element_to_be_clickable((
+                By.XPATH, 
+                "//button[@type='submit' or contains(@class, 'login') or contains(text(), 'Login') or contains(text(), 'Sign In')]"
+            ))
         )
         login_button.click()
         sleep(random.uniform(6, 9))

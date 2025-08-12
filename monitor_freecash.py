@@ -7,7 +7,9 @@ import logging
 import pickle
 import os
 
-logging.basicConfig(filename='/app/bot.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Configura logs para o console (stdout)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.info("Script iniciado no Render")
 
 def get_driver():
     logging.info("Inicializando o driver do Chrome")

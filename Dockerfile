@@ -1,13 +1,15 @@
 FROM python:3.9-slim
 
+# Instala gnupg e wget
+RUN apt-get update && apt-get install -y wget gnupg
+
 # Adiciona a chave e o repositório do Google Chrome
-RUN apt-get update && apt-get install -y wget && \
-    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
-    echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list
+RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    echo "deb seta [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list
 
 # Instala dependências e Chrome
 RUN apt-get update && apt-get install -y \
-    wget unzip libglib2.0-0 libnss3 libgconf-2-4 libfontconfig1 google-chrome-stable
+    unzip libglib2.0-0 libnss3 libgconf-2-4 libfontconfig1 google-chrome-stable
 
 # Instala ChromeDriver
 RUN CHROME_DRIVER_VERSION=$(wget -qO- https://chromedriver.storage.googleapis.com/LATEST_RELEASE) && \

@@ -32,21 +32,40 @@ def login_freecash(email, password):
     logging.info("Iniciando login no FreeCash")
     driver = get_driver()
     try:
-        logging.info("Acessando página de login")
-        driver.get("https://freecash.com/auth/login")
+        # Acessa a página inicial
+        logging.info("Acessando página inicial do FreeCash")
+        driver.get("https://freecash.com/br")
         sleep(random.uniform(3, 6))
         
         # Verifica redirecionamentos
-        if "login" not in driver.current_url:
-            logging.warning(f"Redirecionado para {driver.current_url}, possível CAPTCHA ou erro")
+        current_url = driver.current_url
+        logging.info(f"URL atual após acesso inicial: {current_url}")
+        
+        # Clica no botão "Entrar"
+        logging.info("Clicando no botão Entrar")
+        login_link = WebDriverWait(driver, 20).until(
+            EC.element_to_be_clickable((
+                By.XPATH, 
+                "//a[contains(text(), 'Entrar') or contains(text(), 'Login') or contains(text(), 'Sign In') or contains(@class, 'login') or contains(@href, 'login')]"
+            ))
+        )
+        login_link.click()
+        sleep(random.uniform(3, 6))
+        
+        # Verifica a URL após clicar em Entrar
+        current_url = driver.current_url
+        logging.info(f"URL atual após clicar em Entrar: {current_url}")
+        if "login" not in current_url.lower() and "auth" not in current_url.lower():
+            logging.warning(f"Redirecionado para {current_url}, possível CAPTCHA ou erro")
+            logging.info(f"HTML da página: {driver.page_source[:1000]}")
             return False
         
-        # Aguarda até que o campo de email esteja visível
+        # Aguarda o campo de email
         logging.info("Aguardando campo de email")
         email_field = WebDriverWait(driver, 30).until(
             EC.presence_of_element_located((
                 By.XPATH, 
-                "//input[@id='email' or @name='email' or @type='email' or contains(@class, 'email')]"
+                "//input[@id='email' or @name='email' or @type='email' or contains(@class, 'email') or contains(@placeholder, 'email') or contains(@placeholder, 'Email')]"
             ))
         )
         logging.info("Inserindo email")
@@ -57,7 +76,7 @@ def login_freecash(email, password):
         password_field = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((
                 By.XPATH, 
-                "//input[@id='password' or @name='password' or @type='password' or contains(@class, 'password')]"
+                "//input[@id='password' or @name='password' or @type='password' or contains(@class, 'password') or contains(@placeholder, 'password') or contains(@placeholder, 'Senha')]"
             ))
         )
         logging.info("Inserindo senha")
@@ -65,7 +84,7 @@ def login_freecash(email, password):
         
         # Verifica se há CAPTCHA
         try:
-            captcha = driver.find_element(By.XPATH, "//div[contains(@class, 'captcha') or contains(@id, 'captcha')]")
+            captcha = driver.find_element(By.XPATH, "//div[contains(@class, 'captcha') or contains(@id, 'captcha') or contains(text(), 'CAPTCHA')]")
             logging.warning("CAPTCHA detectado, login manual necessário")
             return False
         except:
@@ -76,13 +95,14 @@ def login_freecash(email, password):
         login_button = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((
                 By.XPATH, 
-                "//button[@type='submit' or contains(@class, 'login') or contains(text(), 'Login') or contains(text(), 'Sign In')]"
+                "//button[@type='submit' or contains(@class, 'login') or contains(@class, 'signin') or contains(text(), 'Login') or contains(text(), 'Sign In') or contains(text(), 'Entrar')]"
             ))
         )
         login_button.click()
         sleep(random.uniform(6, 9))
         
         # Verifica se o login foi bem-sucedido
+        logging.info("Verificando redirecionamento para dashboard")
         WebDriverWait(driver, 10).until(
             EC.url_contains("dashboard")
         )
@@ -92,6 +112,7 @@ def login_freecash(email, password):
         return True
     except Exception as e:
         logging.error(f"Erro no login: {str(e)}")
+        logging.info(f"HTML da página no momento do erro: {driver.page_source[:1000]}")
         return False
     finally:
         logging.info("Fechando driver após login")

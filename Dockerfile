@@ -1,4 +1,4 @@
-FROM python:3.9-slim-buster
+FROM python:3.9-slim
 
 # Instala dependências mínimas
 RUN apt-get update && apt-get install -y --no-install-recommends \

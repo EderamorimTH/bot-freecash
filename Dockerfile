@@ -14,13 +14,12 @@ RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key
 RUN apt-get update && apt-get install -y google-chrome-stable && \
     rm -rf /var/lib/apt/lists/*
 
-# Instala ChromeDriver compatível com Chrome 139
-RUN CHROME_MAJOR_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+' | head -1 | cut -d'.' -f1) && \
-    CHROMEDRIVER_VERSION=$(wget -qO- "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_MAJOR_VERSION}") && \
-    wget -q -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip" && \
+# Instala ChromeDriver 139.0.7258.127
+RUN wget -q -O /tmp/chromedriver.zip https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/139.0.7258.127/linux64/chromedriver-linux64.zip && \
     unzip /tmp/chromedriver.zip -d /usr/local/bin/ && \
+    mv /usr/local/bin/chromedriver-linux64/chromedriver /usr/local/bin/chromedriver && \
     chmod +x /usr/local/bin/chromedriver && \
-    rm /tmp/chromedriver.zip
+    rm -rf /tmp/chromedriver.zip /usr/local/bin/chromedriver-linux64
 
 WORKDIR /app
 

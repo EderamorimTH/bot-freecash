@@ -55,28 +55,35 @@ def login_freecash(email, password):
         # Verifica a URL após clicar em Entrar
         current_url = driver.current_url
         logging.info(f"URL atual após clicar em Entrar: {current_url}")
-        if "login" not in current_url.lower() and "auth" not in current_url.lower():
-            logging.warning(f"Redirecionado para {current_url}, possível CAPTCHA ou erro")
-            logging.info(f"HTML da página: {driver.page_source[:1000]}")
-            return False
         
-        # Aguarda o campo de email
-        logging.info("Aguardando campo de email")
-        email_field = WebDriverWait(driver, 30).until(
+        # Aguarda o modal de login
+        logging.info("Aguardando modal de login")
+        modal = WebDriverWait(driver, 20).until(
             EC.presence_of_element_located((
                 By.XPATH, 
-                "//input[@id='email' or @name='email' or @type='email' or contains(@class, 'email') or contains(@placeholder, 'email') or contains(@placeholder, 'Email')]"
+                "//div[contains(@class, 'modal') or contains(@class, 'popup') or contains(@class, 'overlay') or contains(@class, 'login')]"
+            ))
+        )
+        logging.info("Modal de login encontrado")
+        logging.info(f"HTML do modal: {modal.get_attribute('outerHTML')[:1000]}")
+        
+        # Aguarda o campo de email dentro do modal
+        logging.info("Aguardando campo de email no modal")
+        email_field = WebDriverWait(driver, 20).until(
+            EC.presence_of_element_located((
+                By.XPATH, 
+                "//div[contains(@class, 'modal') or contains(@class, 'popup') or contains(@class, 'overlay') or contains(@class, 'login')]//input[@id='email' or @name='email' or @type='email' or contains(@class, 'email') or contains(@placeholder, 'email') or contains(@placeholder, 'Email')]"
             ))
         )
         logging.info("Inserindo email")
         email_field.send_keys(email)
         
-        # Aguarda o campo de senha
-        logging.info("Aguardando campo de senha")
+        # Aguarda o campo de senha dentro do modal
+        logging.info("Aguardando campo de senha no modal")
         password_field = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((
                 By.XPATH, 
-                "//input[@id='password' or @name='password' or @type='password' or contains(@class, 'password') or contains(@placeholder, 'password') or contains(@placeholder, 'Senha')]"
+                "//div[contains(@class, 'modal') or contains(@class, 'popup') or contains(@class, 'overlay') or contains(@class, 'login')]//input[@id='password' or @name='password' or @type='password' or contains(@class, 'password') or contains(@placeholder, 'password') or contains(@placeholder, 'Senha')]"
             ))
         )
         logging.info("Inserindo senha")
@@ -90,12 +97,12 @@ def login_freecash(email, password):
         except:
             pass
         
-        # Clica no botão de login
+        # Clica no botão de login dentro do modal
         logging.info("Clicando no botão de login")
         login_button = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((
                 By.XPATH, 
-                "//button[@type='submit' or contains(@class, 'login') or contains(@class, 'signin') or contains(text(), 'Login') or contains(text(), 'Sign In') or contains(text(), 'Entrar')]"
+                "//div[contains(@class, 'modal') or contains(@class, 'popup') or contains(@class, 'overlay') or contains(@class, 'login')]//button[@type='submit' or contains(@class, 'login') or contains(@class, 'signin') or contains(text(), 'Login') or contains(text(), 'Sign In') or contains(text(), 'Entrar')]"
             ))
         )
         login_button.click()

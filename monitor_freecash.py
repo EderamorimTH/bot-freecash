@@ -10,7 +10,7 @@ import os
 logging.basicConfig(filename='/app/bot.log', level=logging.INFO)
 
 chrome_options = Options()
-chrome_options.add_argument("--headless=new")  # Modo headless atualizado
+chrome_options.add_argument("--headless=new")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
 chrome_options.add_argument("--disable-gpu")
@@ -36,15 +36,12 @@ def monitor_surveys():
     try:
         driver.get("https://freecash.com")
         sleep(2)
-
         if os.path.exists("/app/cookies.pkl"):
             cookies = pickle.load(open("/app/cookies.pkl", "rb"))
             for cookie in cookies:
                 driver.add_cookie(cookie)
-
         driver.get("https://freecash.com/surveys")
         sleep(random.uniform(3, 7))
-
         surveys = driver.find_elements(By.XPATH, "//div[contains(@class, 'survey-item')]")
         for survey in surveys:
             try:

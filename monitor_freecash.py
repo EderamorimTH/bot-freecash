@@ -57,8 +57,8 @@ def monitor_surveys():
         return 0
 
 if __name__ == "__main__":
-    email = "SEU_EMAIL_AQUI"
-    password = "SUA_SENHA_AQUI"
+    email = "edert905@gmail.com"
+    password = "Mariamiguel1"
     login_freecash(email, password)
     while True:
         surveys_found = monitor_surveys()

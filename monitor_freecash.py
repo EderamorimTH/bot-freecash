@@ -1,13 +1,15 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from time import sleep
 import random
 import logging
 import pickle
 import os
 
-# Configura logs para o console (stdout)
+# Configura logs para o console
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logging.info("Script iniciado no Render")
 
@@ -31,20 +33,52 @@ def login_freecash(email, password):
     driver = get_driver()
     try:
         logging.info("Acessando página de login")
-        driver.get("https://freecash.com/login")
+        driver.get("https://freecash.com/auth/login")
         sleep(random.uniform(3, 6))
+        
+        # Aguarda até que o campo de email esteja visível
+        logging.info("Aguardando campo de email")
+        email_field = WebDriverWait(driver, 20).until(
+            EC.presence_of_element_located((By.XPATH, "//input[@id='email' or @name='email' or @type='email']"))
+        )
         logging.info("Inserindo email")
-        driver.find_element(By.NAME, "email").send_keys(email)
+        email_field.send_keys(email)
+        
+        # Aguarda o campo de senha
+        logging.info("Aguardando campo de senha")
+        password_field = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, "//input[@id='password' or @name='password' or @type='password']"))
+        )
         logging.info("Inserindo senha")
-        driver.find_element(By.NAME, "password").send_keys(password)
+        password_field.send_keys(password)
+        
+        # Verifica se há CAPTCHA
+        try:
+            captcha = driver.find_element(By.XPATH, "//div[contains(@class, 'captcha')]")
+            logging.warning("CAPTCHA detectado, login manual necessário")
+            return False
+        except:
+            pass
+        
+        # Clica no botão de login
         logging.info("Clicando no botão de login")
-        driver.find_element(By.XPATH, "//button[@type='submit']").click()
+        login_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "//button[@type='submit' or contains(text(), 'Login')]"))
+        )
+        login_button.click()
         sleep(random.uniform(6, 9))
+        
+        # Verifica se o login foi bem-sucedido
+        WebDriverWait(driver, 10).until(
+            EC.url_contains("dashboard")
+        )
         logging.info("Salvando cookies")
         pickle.dump(driver.get_cookies(), open("/app/cookies.pkl", "wb"))
         logging.info("Login bem-sucedido")
+        return True
     except Exception as e:
         logging.error(f"Erro no login: {str(e)}")
+        return False
     finally:
         logging.info("Fechando driver após login")
         driver.quit()
@@ -61,11 +95,15 @@ def monitor_surveys():
             cookies = pickle.load(open("/app/cookies.pkl", "rb"))
             for cookie in cookies:
                 driver.add_cookie(cookie)
+        
         logging.info("Acessando página de pesquisas")
         driver.get("https://freecash.com/surveys")
         sleep(random.uniform(4, 8))
+        
         logging.info("Buscando pesquisas disponíveis")
-        surveys = driver.find_elements(By.XPATH, "//div[contains(@class, 'survey-item')]")
+        surveys = WebDriverWait(driver, 20).until(
+            EC.presence_of_all_elements_located((By.XPATH, "//div[contains(@class, 'survey-item')]"))
+        )
         logging.info(f"{len(surveys)} pesquisas encontradas")
         count = 0
         for survey in surveys:
@@ -103,8 +141,10 @@ if __name__ == "__main__":
     logging.info("Iniciando o bot")
     email = "edert905@gmail.com"
     password = "Mariamiguel1"
-    login_freecash(email, password)
-    while True:
-        surveys_found = monitor_surveys()
-        logging.info(f"Ciclo concluído: {surveys_found} pesquisas encontradas")
-        sleep(random.uniform(600, 1200))
+    if login_freecash(email, password):
+        while True:
+            surveys_found = monitor_surveys()
+            logging.info(f"Ciclo concluído: {surveys_found} pesquisas encontradas")
+            sleep(random.uniform(600, 1200))
+    else:
+        logging.error("Falha no login, encerrando bot")

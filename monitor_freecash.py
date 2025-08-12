@@ -1,5 +1,6 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
 from time import sleep
 import random
 import logging
@@ -9,9 +10,12 @@ import os
 logging.basicConfig(filename='/app/bot.log', level=logging.INFO)
 
 chrome_options = Options()
-chrome_options.add_argument("--headless")
+chrome_options.add_argument("--headless=new")  # Modo headless atualizado
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
+chrome_options.add_argument("--disable-gpu")
+chrome_options.add_argument("--remote-debugging-port=9222")
+chrome_options.add_argument("--window-size=1920,1080")
 
 driver = webdriver.Chrome(options=chrome_options)
 
@@ -19,9 +23,9 @@ def login_freecash(email, password):
     try:
         driver.get("https://freecash.com/login")
         sleep(random.uniform(2, 5))
-        driver.find_element("name", "email").send_keys(email)
-        driver.find_element("name", "password").send_keys(password)
-        driver.find_element("xpath", "//button[@type='submit']").click()
+        driver.find_element(By.NAME, "email").send_keys(email)
+        driver.find_element(By.NAME, "password").send_keys(password)
+        driver.find_element(By.XPATH, "//button[@type='submit']").click()
         sleep(random.uniform(5, 8))
         pickle.dump(driver.get_cookies(), open(f"/app/cookies.pkl", "wb"))
         logging.info("Login bem-sucedido")
@@ -31,22 +35,27 @@ def login_freecash(email, password):
 def monitor_surveys():
     try:
         driver.get("https://freecash.com")
+        sleep(2)
+
         if os.path.exists("/app/cookies.pkl"):
-            for cookie in pickle.load(open("/app/cookies.pkl", "rb")):
+            cookies = pickle.load(open("/app/cookies.pkl", "rb"))
+            for cookie in cookies:
                 driver.add_cookie(cookie)
+
         driver.get("https://freecash.com/surveys")
         sleep(random.uniform(3, 7))
-        surveys = driver.find_elements("xpath", "//div[@class='survey-item']")
+
+        surveys = driver.find_elements(By.XPATH, "//div[contains(@class, 'survey-item')]")
         for survey in surveys:
             try:
-                reward = survey.find_element("xpath", ".//span[@class='reward']").text
+                reward = survey.find_element(By.XPATH, ".//span[contains(@class, 'reward')]").text
                 if float(reward.replace('$', '')) >= 0.5:
-                    survey.find_element("xpath", ".//button[@class='start-survey']").click()
+                    survey.find_element(By.XPATH, ".//button[contains(@class, 'start-survey')]").click()
                     sleep(random.uniform(5, 10))
-                    options = driver.find_elements("xpath", "//input[@type='radio']")
+                    options = driver.find_elements(By.XPATH, "//input[@type='radio']")
                     if options:
                         random.choice(options).click()
-                        driver.find_element("xpath", "//button[@type='submit']").click()
+                        driver.find_element(By.XPATH, "//button[@type='submit']").click()
                         sleep(random.uniform(2, 5))
                         logging.info(f"Pesquisa completada: {reward}")
             except:

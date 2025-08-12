@@ -56,12 +56,12 @@ def login_freecash(email, password):
         current_url = driver.current_url
         logging.info(f"URL atual após clicar em Entrar: {current_url}")
         
-        # Aguarda o modal de login
+        # Aguarda o modal de login com tempo aumentado
         logging.info("Aguardando modal de login")
-        modal = WebDriverWait(driver, 20).until(
+        modal = WebDriverWait(driver, 30).until(
             EC.presence_of_element_located((
                 By.XPATH, 
-                "//div[contains(@class, 'modal') or contains(@class, 'popup') or contains(@class, 'overlay') or contains(@class, 'login')]"
+                "//div[contains(@class, 'modal') or contains(@class, 'popup') or contains(@class, 'overlay') or contains(@class, 'login') or contains(@class, 'modal-login') or contains(@class, 'popup-login')]"
             ))
         )
         logging.info("Modal de login encontrado")

@@ -9,7 +9,7 @@ import logging
 import pickle
 import os
 
-# Configura logs para o console
+# Configuração de logs
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logging.info("Script iniciado no Render")
 
@@ -32,151 +32,88 @@ def login_freecash(email, password):
     logging.info("Iniciando login no FreeCash")
     driver = get_driver()
     try:
-        # Acessa a página inicial
-        logging.info("Acessando página inicial do FreeCash")
+        # Acessa página inicial
         driver.get("https://freecash.com/br")
-        sleep(random.uniform(3, 6))
-        
-        # Verifica redirecionamentos
-        current_url = driver.current_url
-        logging.info(f"URL atual após acesso inicial: {current_url}")
-        
+        WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+        logging.info(f"Página carregada: {driver.current_url}")
+
         # Clica no botão "Entrar"
-        logging.info("Clicando no botão Entrar")
-        login_link = WebDriverWait(driver, 20).until(
-            EC.element_to_be_clickable((
-                By.XPATH, 
-                "//a[contains(text(), 'Entrar') or contains(text(), 'Login') or contains(text(), 'Sign In') or contains(@class, 'login') or contains(@href, 'login')]"
-            ))
-        )
-        login_link.click()
-        sleep(random.uniform(3, 6))
-        
-        # Verifica a URL após clicar em Entrar
-        current_url = driver.current_url
-        logging.info(f"URL atual após clicar em Entrar: {current_url}")
-        
-        # Aguarda o modal de login com tempo aumentado
-        logging.info("Aguardando modal de login")
-        modal = WebDriverWait(driver, 30).until(
-            EC.presence_of_element_located((
-                By.XPATH, 
-                "//div[contains(@class, 'modal') or contains(@class, 'popup') or contains(@class, 'overlay') or contains(@class, 'login') or contains(@class, 'modal-login') or contains(@class, 'popup-login')]"
-            ))
-        )
-        logging.info("Modal de login encontrado")
-        logging.info(f"HTML do modal: {modal.get_attribute('outerHTML')[:1000]}")
-        
-        # Aguarda o campo de email dentro do modal
-        logging.info("Aguardando campo de email no modal")
-        email_field = WebDriverWait(driver, 20).until(
-            EC.presence_of_element_located((
-                By.XPATH, 
-                "//div[contains(@class, 'modal') or contains(@class, 'popup') or contains(@class, 'overlay') or contains(@class, 'login')]//input[@id='email' or @name='email' or @type='email' or contains(@class, 'email') or contains(@placeholder, 'email') or contains(@placeholder, 'Email')]"
-            ))
-        )
-        logging.info("Inserindo email")
-        email_field.send_keys(email)
-        
-        # Aguarda o campo de senha dentro do modal
-        logging.info("Aguardando campo de senha no modal")
-        password_field = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((
-                By.XPATH, 
-                "//div[contains(@class, 'modal') or contains(@class, 'popup') or contains(@class, 'overlay') or contains(@class, 'login')]//input[@id='password' or @name='password' or @type='password' or contains(@class, 'password') or contains(@placeholder, 'password') or contains(@placeholder, 'Senha')]"
-            ))
-        )
-        logging.info("Inserindo senha")
-        password_field.send_keys(password)
-        
-        # Verifica se há CAPTCHA
         try:
-            captcha = driver.find_element(By.XPATH, "//div[contains(@class, 'captcha') or contains(@id, 'captcha') or contains(text(), 'CAPTCHA')]")
-            logging.warning("CAPTCHA detectado, login manual necessário")
+            login_btn = WebDriverWait(driver, 20).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, "a[href*='login'], button[href*='login']"))
+            )
+            login_btn.click()
+            logging.info("Botão 'Entrar' clicado")
+        except Exception:
+            logging.error("Botão 'Entrar' não encontrado")
             return False
-        except:
-            pass
-        
-        # Clica no botão de login dentro do modal
-        logging.info("Clicando no botão de login")
-        login_button = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((
-                By.XPATH, 
-                "//div[contains(@class, 'modal') or contains(@class, 'popup') or contains(@class, 'overlay') or contains(@class, 'login')]//button[@type='submit' or contains(@class, 'login') or contains(@class, 'signin') or contains(text(), 'Login') or contains(text(), 'Sign In') or contains(text(), 'Entrar')]"
-            ))
+
+        # Aguarda redirecionamento para página de login
+        WebDriverWait(driver, 20).until(EC.url_contains("login"))
+        logging.info(f"Página de login: {driver.current_url}")
+
+        # Preenche email
+        email_field = WebDriverWait(driver, 20).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='email']"))
+        )
+        email_field.clear()
+        email_field.send_keys(email)
+        logging.info("Email inserido")
+
+        # Preenche senha
+        password_field = WebDriverWait(driver, 20).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='password']"))
+        )
+        password_field.clear()
+        password_field.send_keys(password)
+        logging.info("Senha inserida")
+
+        # Clica para entrar
+        login_button = WebDriverWait(driver, 20).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']"))
         )
         login_button.click()
-        sleep(random.uniform(6, 9))
-        
-        # Verifica se o login foi bem-sucedido
-        logging.info("Verificando redirecionamento para dashboard")
-        WebDriverWait(driver, 10).until(
-            EC.url_contains("dashboard")
-        )
-        logging.info("Salvando cookies")
+        logging.info("Botão de login clicado")
+
+        # Aguarda redirecionamento
+        WebDriverWait(driver, 30).until(EC.url_contains("dashboard"))
+        logging.info("Login realizado com sucesso")
+
+        # Salva cookies
         pickle.dump(driver.get_cookies(), open("/app/cookies.pkl", "wb"))
-        logging.info("Login bem-sucedido")
+        logging.info("Cookies salvos")
+
         return True
     except Exception as e:
-        logging.error(f"Erro no login: {str(e)}")
-        logging.info(f"HTML da página no momento do erro: {driver.page_source[:1000]}")
+        logging.error(f"Erro no login: {e}")
+        logging.info(f"HTML no erro: {driver.page_source[:800]}")
         return False
     finally:
-        logging.info("Fechando driver após login")
         driver.quit()
 
 def monitor_surveys():
     logging.info("Iniciando monitoramento de pesquisas")
     driver = get_driver()
     try:
-        logging.info("Acessando página inicial do FreeCash")
         driver.get("https://freecash.com")
-        sleep(random.uniform(2, 4))
+        WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+
         if os.path.exists("/app/cookies.pkl"):
             logging.info("Carregando cookies")
             cookies = pickle.load(open("/app/cookies.pkl", "rb"))
             for cookie in cookies:
                 driver.add_cookie(cookie)
-        
-        logging.info("Acessando página de pesquisas")
+
         driver.get("https://freecash.com/surveys")
-        sleep(random.uniform(4, 8))
-        
-        logging.info("Buscando pesquisas disponíveis")
-        surveys = WebDriverWait(driver, 20).until(
-            EC.presence_of_all_elements_located((By.XPATH, "//div[contains(@class, 'survey-item')]"))
-        )
+        WebDriverWait(driver, 20).until(EC.presence_of_all_elements_located((By.CLASS_NAME, "survey-item")))
+
+        surveys = driver.find_elements(By.CLASS_NAME, "survey-item")
         logging.info(f"{len(surveys)} pesquisas encontradas")
-        count = 0
-        for survey in surveys:
-            try:
-                reward = survey.find_element(By.XPATH, ".//span[contains(@class, 'reward')]").text
-                reward_value = float(reward.replace('$', ''))
-                if reward_value >= 0.5:
-                    logging.info(f"Iniciando pesquisa com recompensa: {reward}")
-                    survey.find_element(By.XPATH, ".//button[contains(@class, 'start-survey')]").click()
-                    sleep(random.uniform(6, 12))
-                    options = driver.find_elements(By.XPATH, "//input[@type='radio']")
-                    if options:
-                        logging.info("Selecionando opção aleatória")
-                        random.choice(options).click()
-                        logging.info("Enviando resposta")
-                        driver.find_element(By.XPATH, "//button[@type='submit']").click()
-                        sleep(random.uniform(3, 6))
-                        logging.info(f"Pesquisa completada: {reward}")
-                        count += 1
-                    if count >= 5:
-                        logging.info("Limite de 5 pesquisas por ciclo atingido")
-                        break
-            except Exception as e:
-                logging.error(f"Erro ao processar pesquisa: {str(e)}")
-                continue
         return len(surveys)
     except Exception as e:
-        logging.error(f"Erro ao monitorar: {str(e)}")
+        logging.error(f"Erro no monitoramento: {e}")
         return 0
     finally:
-        logging.info("Fechando driver após monitoramento")
         driver.quit()
 
 if __name__ == "__main__":
@@ -185,8 +122,8 @@ if __name__ == "__main__":
     password = "Mariamiguel1"
     if login_freecash(email, password):
         while True:
-            surveys_found = monitor_surveys()
-            logging.info(f"Ciclo concluído: {surveys_found} pesquisas encontradas")
+            qnt = monitor_surveys()
+            logging.info(f"Ciclo concluído: {qnt} pesquisas encontradas")
             sleep(random.uniform(600, 1200))
     else:
         logging.error("Falha no login, encerrando bot")
